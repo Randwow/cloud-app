@@ -1,12 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kotlin-app-deployment
+  name: kotlin-app
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: kotlin-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   template:
     metadata:
       labels:
@@ -14,6 +19,13 @@ spec:
     spec:
       containers:
       - name: kotlin-app
-        image: username/kotlin-app:latest
+        image: 533267353350.dkr.ecr.eu-central-1.amazonaws.com/kotlin-app:latest
         ports:
         - containerPort: 8080
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1024Mi"

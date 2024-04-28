@@ -1,0 +1,57 @@
+name: CI/CD Pipeline to EKS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        run: |
+          IMAGE_TAG=latest
+          IMAGE_URI=533267353350.dkr.ecr.eu-central-1.amazonaws.com/kotlin-app
+          docker build -t $IMAGE_URI:$IMAGE_TAG .
+          docker push $IMAGE_URI:$IMAGE_TAG
+
+  deploy-to-eks:
+    name: Deploy to Amazon EKS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Set up kubectl
+        uses: aws-actions/eks-kubectl@v1
+        with:
+          cluster-name: kotlinapp
+
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+          kubectl apply -f k8s-hpa.yaml
