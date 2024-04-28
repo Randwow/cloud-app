@@ -25,10 +25,10 @@ jobs:
 
       - name: Build, tag, and push Docker image to Amazon ECR
         run: |
-          IMAGE_TAG=latest
-          IMAGE_URI=533267353350.dkr.ecr.eu-central-1.amazonaws.com/kotlin-app
-          docker build -t $IMAGE_URI:$IMAGE_TAG .
-          docker push $IMAGE_URI:$IMAGE_TAG
+          IMAGE_TAG=${{ github.sha }}
+          IMAGE_URI=533267353350.dkr.ecr.eu-central-1.amazonaws.com/kotlin-app:$IMAGE_TAG
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
 
   deploy-to-eks:
     name: Deploy to Amazon EKS
@@ -56,8 +56,10 @@ jobs:
         run: |
           aws eks update-kubeconfig --name kotlinapp --region eu-central-1
 
-      - name: Deploy to EKS
+      - name: Update Kubernetes Deployment to use new image
         run: |
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
-          kubectl apply -f k8s-hpa.yaml
+          kubectl set image deployment/kotlin-app kotlin-app=533267353350.dkr.ecr.eu-central-1.amazonaws.com/kotlin-app:${{ github.sha }}
+
+
+
+
